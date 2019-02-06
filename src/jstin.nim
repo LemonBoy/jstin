@@ -41,13 +41,8 @@ proc toJson*[T: bool](obj: T): JsonNode =
   staticEcho "toJson(bool) ", typetraits.name(type(T))
   result = newJBool(obj)
 
-proc toJson*[T: array](obj: T): JsonNode =
-  staticEcho "toJson(array) ", typetraits.name(type(T))
-  result = newJArray()
-  for x in obj: result.add(toJson(x))
-
-proc toJson*[T: seq](obj: T): JsonNode =
-  staticEcho "toJson(seq) ", typetraits.name(type(T))
+proc toJson*[T: array|seq](obj: T): JsonNode =
+  staticEcho "toJson(array or seq) ", typetraits.name(type(T))
   result = newJArray()
   for x in obj: result.add(toJson(x))
 
