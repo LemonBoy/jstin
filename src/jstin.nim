@@ -66,6 +66,12 @@ proc toJson*[T: object](obj: T): JsonNode =
     if key.len > 0:
       result[key] = toJson(v)
 
+proc toJson*[T: tuple](obj: T): JsonNode =
+  staticEcho "toJson(tuple) ", typetraits.name(type(T))
+  result = newJObject()
+  for f, v in obj.fieldPairs:
+    result[f] = toJson(v)
+
 proc fromJson*[T: SomeInteger|char](obj: var T; node: JsonNode) =
   staticEcho "fromJson(integer) ", typetraits.name(type(T))
   verifyJsonKind(node, {JInt}, T)
@@ -132,6 +138,12 @@ proc fromJson*[T: object](obj: var T; node: JsonNode) =
     if key.len > 0:
       fromJson(v, node[key])
   obj = dummy
+
+proc fromJson*[T: tuple](obj: var T; node: JsonNode) =
+  staticEcho "fromJson(tuple) ", typetraits.name(type(T))
+  verifyJsonKind(node, {JObject}, T)
+  for f, v in obj.fieldPairs:
+    v.fromJson(node[f])
 
 {.pop.}
 

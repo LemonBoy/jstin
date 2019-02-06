@@ -48,6 +48,14 @@ test "Roundtrip of objects":
 
   test(Foo(a: false, b: "yes", c: 3.14, d: 99, e: nil, f: Bar(a: 1, b: 2)))
 
+test "Roundtrip of tuples":
+  test(())
+  test((1, ))
+  test((1, 2))
+  test((1, 2, 3))
+  test((1, (1, (1, (1, )))))
+  test((foo: "abc", bar: (1,2,3)))
+
 test "Field renaming":
   let jsonData = parseJson("""
   {
