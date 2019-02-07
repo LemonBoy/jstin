@@ -17,8 +17,8 @@ type
     ##
     ## A field is considered empty if:
     ## - It is convertible to a ``bool`` and its value is ``false``;
-    ## - Its length, evaluated as ``len(field)``, is zero;
-    ## - ``isNil(field)`` returns true.
+    ## - ``isNil(field)`` returns true;
+    ## - Its length, evaluated as ``len(field)``, is zero.
     Never ## Always serialize/deserialize the field.
     WhenEmpty ## Do not deserialize the field if empty.
     Always ## Never serialize the field.
@@ -49,8 +49,8 @@ template getFieldOpts(f, v: untyped): untyped =
 template emptyCheck(x: untyped): bool =
   # Try to determine if a given field is empty, for some definition of empty.
   when compiles(bool(x)):  bool(x)
-  elif compiles(len(x)):   len(x) == 0
   elif compiles(isNil(x)): isNil(x)
+  elif compiles(len(x)):   len(x) == 0
   else:
     {.error: "Cannot determine if this type is empty or not!".}
 
