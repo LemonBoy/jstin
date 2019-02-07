@@ -92,3 +92,21 @@ test "Custom serializer":
   var obj = MyBar(foo: MyFoo(x: "super"))
   let check = fromJson[MyBar](toJson(obj))
   check(obj == fromJson[MyBar](toJson(obj)))
+
+test "omit annotation":
+  type
+    Foo1 = object
+      a {.serializeAs(omit=JstinOmit.Always).}: string
+      b {.serializeAs(omit=JstinOmit.WhenEmpty).}: seq[int]
+      c {.serializeAs(omit=JstinOmit.WhenEmpty).}: array[3, int]
+      d {.serializeAs(omit=JstinOmit.WhenEmpty).}: ref Foo1
+      e: float
+
+  let obj = Foo1(a: "abc", b: @[], c: [1,2,3], d: nil, e: 6.28)
+  let rec = fromJson[Foo1](toJson(obj))
+  check(rec != obj)
+  check(rec.a.len == 0)
+  check(rec.b.len == 0)
+  check(rec.c.len == 3)
+  check(rec.d.isNil)
+  check(rec.e == 6.28)
