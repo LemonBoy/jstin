@@ -18,6 +18,11 @@ type
       ## Do not deserialize the field if it's ``len()`` returns zero or
       ## ``isNil`` returns ``true``. When deserialized a missing field marked
       ## with this tag is initialized to its default (zero) value.
+      ##
+      ## A field is considered empty if:
+      ## - It is convertible to a ``bool`` and its value is ``false``;
+      ## - Its length, evaluated as ``len(field)``, is zero;
+      ## - ``isNil(field)`` returns true.
     Always ## \
       ## Never serialize this field. When deserialized a field marked with this
       ## tag is initialized to its default (zero) value.
@@ -46,7 +51,9 @@ template getFieldOpts(f, v: untyped): untyped =
     (key: f, omit: JstinOmit.Never)
 
 template emptyCheck(x: untyped): bool =
-  when compiles(len(x)): len(x) == 0
+  # Try to determine if a given field is empty, for some definition of empty.
+  when compiles(bool(x)):  bool(x)
+  elif compiles(len(x)):   len(x) == 0
   elif compiles(isNil(x)): isNil(x)
   else:
     {.error: "Cannot determine if this type is empty or not!".}
