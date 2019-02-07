@@ -46,7 +46,13 @@ test "Roundtrip of objects":
       e: ref Foo
       f: Bar
 
+    Baz = object
+      x: ref int
+      y: ref Foo
+      z: ref Bar
+
   test(Foo(a: false, b: "yes", c: 3.14, d: 99, e: nil, f: Bar(a: 1, b: 2)))
+  test(Baz(x: nil, y: nil, z: nil))
 
 test "Roundtrip of tuples":
   test(())

@@ -57,54 +57,53 @@ template default[T](): T =
 
 {.push inline.}
 
-proc toJson*[T: SomeInteger|char](obj: T): JsonNode =
+proc toJson*[T: SomeInteger|char](val: T): JsonNode =
   staticEcho "toJson(integer) ", typetraits.name(type(T))
-  result = newJInt(BiggestInt(obj))
+  result = newJInt(BiggestInt(val))
 
-proc toJson*[T: enum](obj: T): JsonNode =
+proc toJson*[T: enum](val: T): JsonNode =
   staticEcho "toJson(enum) ", typetraits.name(type(T))
-  result = newJString($obj)
+  result = newJString($val)
 
-proc toJson*[T: SomeFloat](obj: T): JsonNode =
+proc toJson*[T: SomeFloat](val: T): JsonNode =
   staticEcho "toJson(float) ", typetraits.name(type(T))
-  result = newJFloat(obj)
+  result = newJFloat(val)
 
-proc toJson*[T: string](obj: T): JsonNode =
+proc toJson*[T: string](val: T): JsonNode =
   staticEcho "toJson(string) ", typetraits.name(type(T))
-  result = newJString(obj)
+  result = newJString(val)
 
-proc toJson*[T: bool](obj: T): JsonNode =
+proc toJson*[T: bool](val: T): JsonNode =
   staticEcho "toJson(bool) ", typetraits.name(type(T))
-  result = newJBool(obj)
+  result = newJBool(val)
 
-proc toJson*[T: array|seq](obj: T): JsonNode =
+proc toJson*[T: array|seq](val: T): JsonNode =
   staticEcho "toJson(array or seq) ", typetraits.name(type(T))
   result = newJArray()
-  for x in obj: result.add(toJson(x))
+  for x in val: result.add(toJson(x))
 
-proc toJson*[T: JsonNode](obj: T): JsonNode =
+proc toJson*[T: JsonNode](val: T): JsonNode =
   staticEcho "toJson(JsonNode)"
-  result = obj
+  result = val
 
-proc toJson*[T: ref object](obj: T): JsonNode =
-  staticEcho "toJson(ref object) ", typetraits.name(type(T))
-  if obj == nil: result = newJNull()
-  else: result = toJson(obj[])
+proc toJson*[T: ref](val: T): JsonNode =
+  staticEcho "toJson(ref) ", typetraits.name(type(T))
+  if val == nil: result = newJNull()
+  else: result = toJson(val[])
 
-proc toJson*[T: object](obj: T): JsonNode =
+proc toJson*[T: object](val: T): JsonNode =
   staticEcho "toJson(obj) ", typetraits.name(type(T))
   result = newJObject()
-  for f, v in obj.fieldPairs:
+  for f, v in val.fieldPairs:
     const opts = getFieldOpts(f, v)
-    staticEcho: opts
     when opts.omit == Never: result[opts.key] = toJson(v)
     elif opts.omit == WhenEmpty:
       if not emptyCheck(v): result[opts.key] = toJson(v)
 
-proc toJson*[T: tuple](obj: T): JsonNode =
+proc toJson*[T: tuple](val: T): JsonNode =
   staticEcho "toJson(tuple) ", typetraits.name(type(T))
   result = newJObject()
-  for f, v in obj.fieldPairs:
+  for f, v in val.fieldPairs:
     result[f] = toJson(v)
 
 proc fromJson*[T: SomeInteger|char](obj: var T; node: JsonNode) =
@@ -146,9 +145,8 @@ proc fromJson*[T: seq](obj: var T; node: JsonNode) =
   for i, val in mpairs(obj):
     val.fromJson(node[i])
 
-proc fromJson*[T: ref object](obj: var T; node: JsonNode) =
-  staticEcho "fromJson(ref obj) ", typetraits.name(type(T))
-  verifyJsonKind(node, {JNull, JObject}, T)
+proc fromJson*[T: ref](obj: var T; node: JsonNode) =
+  staticEcho "fromJson(ref) ", typetraits.name(type(T))
   if node.kind == JNull: obj = nil
   else:
     new(obj)
