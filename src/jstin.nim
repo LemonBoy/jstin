@@ -11,21 +11,17 @@ template staticEcho(args: varargs[untyped]) =
     static: echo args
 
 type
-  JstinOmit* = enum
-    Never ## \
-      ## Always serialize/deserialize the field.
-    WhenEmpty ## \
-      ## Do not deserialize the field if it's ``len()`` returns zero or
-      ## ``isNil`` returns ``true``. When deserialized a missing field marked
-      ## with this tag is initialized to its default (zero) value.
-      ##
-      ## A field is considered empty if:
-      ## - It is convertible to a ``bool`` and its value is ``false``;
-      ## - Its length, evaluated as ``len(field)``, is zero;
-      ## - ``isNil(field)`` returns true.
-    Always ## \
-      ## Never serialize this field. When deserialized a field marked with this
-      ## tag is initialized to its default (zero) value.
+  JstinOmit* = enum ## \
+    ## When deserialized, missing fields marked with the ``Never`` tag or with
+    ## the ``WhenEmpty`` tag are initialized to their default (zero) value.
+    ##
+    ## A field is considered empty if:
+    ## - It is convertible to a ``bool`` and its value is ``false``;
+    ## - Its length, evaluated as ``len(field)``, is zero;
+    ## - ``isNil(field)`` returns true.
+    Never ## Always serialize/deserialize the field.
+    WhenEmpty ## Do not deserialize the field if empty.
+    Always ## Never serialize the field.
 
 template serializeAs*(key=""; omit=JstinOmit.Never) {.pragma.} ## \
   ## Serialize the field with ``key`` as name.
