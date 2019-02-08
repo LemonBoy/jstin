@@ -35,8 +35,8 @@ test "Handling of array & seq":
 test "Roundtrip of objects":
   type
     Bar = object
-      a: int
-      b: int
+      `a`: int
+      `b`: int
 
     Foo = object
       a: bool

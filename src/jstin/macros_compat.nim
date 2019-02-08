@@ -75,6 +75,8 @@ proc customPragmaNode(n: NimNode): NimNode =
                 if varName.kind == nnkPostfix:
                   # This is a public field. We are skipping the postfix *
                   varName = varName[1]
+                if varName.kind == nnkAccQuoted:
+                  varName = varName[0]
                 if eqIdent(varName.strVal, name):
                   return varNode[1]
 
