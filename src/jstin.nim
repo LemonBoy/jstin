@@ -19,9 +19,9 @@ type
     ## - It is convertible to a ``bool`` and its value is ``false``;
     ## - ``isNil(field)`` returns true;
     ## - Its length, evaluated as ``len(field)``, is zero.
-    Never ## Always serialize/deserialize the field.
+    Never     ## Always serialize/deserialize the field.
     WhenEmpty ## Do not deserialize the field if empty.
-    Always ## Never serialize the field.
+    Always    ## Never serialize the field.
 
   JstinRenameRule* = enum ## \
     ## These rules are used to rename all the objects field names using the
