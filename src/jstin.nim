@@ -26,12 +26,12 @@ type
   JstinRenameRule* = enum ## \
     ## These rules are used to rename all the objects field names using the
     ## selected case convention.
-    NoRename
-    LowerCase
-    UpperCase
-    CapitalCase
-    CamelCase
-    SnakeCase
+    NoRename    ## No conversion is done.
+    LowerCase   ## "lowercase"
+    UpperCase   ## "UPPERCASE"
+    CapitalCase ## "Capitalcase"
+    CamelCase   ## "camelCase"
+    SnakeCase   ## "snake_case"
 
 template objTag*(renameAll: JstinRenameRule) {.pragma.} ## \
   ## Use this to tag an object type.
