@@ -8,6 +8,9 @@ const
   nnkPragmaCallKinds = {nnkExprColonExpr, nnkCall, nnkCallStrLit}
 
 proc customPragmaNode(n: NimNode): NimNode =
+  var n = n
+  if n.kind == nnkHiddenDeref:
+    n = n[0]
   expectKind(n, {nnkSym, nnkDotExpr, nnkBracketExpr, nnkTypeOfExpr, nnkCheckedFieldExpr})
   let
     typ = n.getTypeInst()
