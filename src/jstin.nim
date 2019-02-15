@@ -1,5 +1,5 @@
 import json
-from strutils import `%`, parseEnum
+import strutils
 from typetraits import nil
 
 # This module contains a couple of patched routines that are needed in order to
@@ -23,11 +23,21 @@ type
     WhenEmpty ## Do not deserialize the field if empty.
     Always ## Never serialize the field.
 
-template serializeAs*(key=""; omit=JstinOmit.Never) {.pragma.} ## \
-  ## Serialize the field with ``key`` as name.
-  ##
-  ## The ``omit`` parameter allows the user to decide when the field should not
-  ## be serialized/deserialized.
+  JstinRenameRule* = enum ## \
+    ## These rules are used to rename all the objects field names using the
+    ## selected case convention.
+    NoRename
+    LowerCase
+    UpperCase
+    CapitalCase
+    CamelCase
+    SnakeCase
+
+template objTag*(renameAll: JstinRenameRule) {.pragma.} ## \
+  ## Use this to tag an object type.
+
+template fieldTag*(rename = ""; omit = JstinOmit.Never) {.pragma.} ## \
+  ## Use this to tag an object field.
 
 template verifyJsonKind(node: JsonNode, kinds: set[JsonNodeKind], destTyp: typedesc) =
   if node.kind notin kinds:
@@ -37,14 +47,44 @@ template verifyJsonKind(node: JsonNode, kinds: set[JsonNodeKind], destTyp: typed
     ]
     raise newException(JsonKindError, msg)
 
-template getFieldOpts(f, v: untyped): untyped =
-  when hasCustomPragma(v, serializeAs):
-    const o = getCustomPragmaVal(v, serializeAs)
-    # If the specified key is empty use the field name
-    when o.key.len > 0: o
-    else: (key: f, omit: o.omit)
+proc renameIdent(custom, name: string, rule: JstinRenameRule):
+  string {.compiletime.} =
+  # Prefer the custom tag, if supplied
+  if custom.len != 0:
+    return custom
+
+  case rule
+  of NoRename:
+    result = name
+  of LowerCase:
+    result = name.toLowerAscii()
+  of UpperCase:
+    result = name.toUpperAscii()
+  of CapitalCase:
+    result = name.capitalizeAscii()
+  of CamelCase:
+    # Convert snake_case to camelCase
+    for i, ch in name:
+      if ch != '_':
+        if i > 0 and name[i - 1] == '_':
+          result.add(ch.toUpperAscii())
+        else:
+          result.add(ch.toLowerAscii())
+  of SnakeCase:
+    # Convert camelCase to snake_case
+    for ch in name:
+      if ch in {'A' .. 'Z'}:
+        if result.len > 0: result.add('_')
+      result.add(ch.toLowerAscii())
+
+template getFieldOpts(name, sym, rule: untyped): untyped =
+  # Given the field name `name`, its symbol `sym` and the rename rule `rule` we
+  # shall figure out what to do with this field.
+  when hasCustomPragma(sym, fieldTag):
+    const tag = getCustomPragmaVal(sym, fieldTag)
+    (key: renameIdent(tag.rename, name, rule), omit: tag.omit)
   else:
-    (key: f, omit: JstinOmit.Never)
+    (key: renameIdent("", name, rule), omit: Never)
 
 template emptyCheck(x: untyped): bool =
   # Try to determine if a given field is empty, for some definition of empty.
@@ -96,12 +136,17 @@ proc toJson*[T: ref](val: T): JsonNode =
 
 proc toJson*[T: object](val: T): JsonNode =
   staticEcho "toJson(obj) ", typetraits.name(type(T))
+  when hasCustomPragma(val, objTag):
+    const renameAll = getCustomPragmaVal(val, objTag)
+  else:
+    const renameAll = NoRename
   result = newJObject()
-  for f, v in val.fieldPairs:
-    const opts = getFieldOpts(f, v)
-    when opts.omit == Never: result[opts.key] = toJson(v)
+  for name, sym in val.fieldPairs:
+    const opts = getFieldOpts(name, sym, renameAll)
+    when opts.omit == Never:
+      result[opts.key] = toJson(sym)
     elif opts.omit == WhenEmpty:
-      if not emptyCheck(v): result[opts.key] = toJson(v)
+      if not emptyCheck(sym): result[opts.key] = toJson(sym)
 
 proc toJson*[T: tuple](val: T): JsonNode =
   staticEcho "toJson(tuple) ", typetraits.name(type(T))
@@ -163,14 +208,16 @@ proc fromJson*[T: JsonNode](obj: var T; node: JsonNode) =
 proc fromJson*[T: object](obj: var T; node: JsonNode) =
   staticEcho "fromJson(obj) ", typetraits.name(type(T))
   verifyJsonKind(node, {JObject}, T)
-  # Iterate over a dummy variable and then copy it over `obj` in order to work
-  # around a bug in `hasCustomPragma`
-  for f, v in obj.fieldPairs:
-    const opts = getFieldOpts(f, v)
-    when opts.omit == Never: fromJson(v, node[opts.key])
+  when hasCustomPragma(obj, objTag):
+    const renameAll = getCustomPragmaVal(obj, objTag)
+  else:
+    const renameAll = NoRename
+  for name, sym in obj.fieldPairs:
+    const opts = getFieldOpts(name, sym, renameAll)
+    when opts.omit == Never: fromJson(sym, node[opts.key])
     elif opts.omit == WhenEmpty:
-      if opts.key in node: fromJson(v, node[opts.key])
-      else: v = default(type(v))
+      if opts.key in node: fromJson(sym, node[opts.key])
+      else: sym = default(type(sym))
 
 proc fromJson*[T: tuple](obj: var T; node: JsonNode) =
   staticEcho "fromJson(tuple) ", typetraits.name(type(T))

@@ -28,9 +28,9 @@ import times
 
 type
   Person = object
-    name {.serializeAs: "falafel".}: string
-    surname {.serializeAs: "kebab".}: string
-    birthDate {.serializeAs: "dob".}: DateTime
+    name {.fieldTag(rename="falafel").}: string
+    surname {.fieldTag(rename="kebab").}: string
+    birthDate {.fieldTag(rename="dob").}: DateTime
 
 proc fromJson(x: var DateTime, n: JsonNode) =
   # Decode the timestamp string
@@ -56,6 +56,17 @@ doAssert(parsed == toJson(asObj))
 ```
 
 ## FAQ
+
+### I don't want to annotate all my damn object fields!
+
+I hear you, if you have to use the annotations to convert the field names
+between different cases `objTag` will save you a lot of time.
+
+```nim
+type
+  CoolObject {.objTag(renameAll = SnakeCase).} = object
+    myFieldName: int # Is serialized/deserialized as my_field_name
+```
 
 ### I get a few `ProveInit` warnings, is that normal?
 

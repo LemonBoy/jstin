@@ -72,8 +72,8 @@ test "Field renaming":
 
   type
     MyObj = object
-      someIntField {.serializeAs: "foo_bar_baz".}: int8
-      someArrayThing {.serializeAs: "badname".}: seq[bool]
+      someIntField {.fieldTag: "foo_bar_baz".}: int8
+      someArrayThing {.fieldTag: "badname".}: seq[bool]
 
   let des = fromJson[MyObj](jsonData)
   check(des.someIntField == 123)
@@ -99,13 +99,13 @@ test "Custom serializer":
   let check = fromJson[MyBar](toJson(obj))
   check(obj == fromJson[MyBar](toJson(obj)))
 
-test "omit annotation":
+test "Omit annotation":
   type
     Foo1 = object
-      a {.serializeAs(omit=JstinOmit.Always).}: string
-      b {.serializeAs(omit=JstinOmit.WhenEmpty).}: seq[int]
-      c {.serializeAs(omit=JstinOmit.WhenEmpty).}: array[3, int]
-      d {.serializeAs(omit=JstinOmit.WhenEmpty).}: ref Foo1
+      a {.fieldTag(omit=JstinOmit.Always).}: string
+      b {.fieldTag(omit=JstinOmit.WhenEmpty).}: seq[int]
+      c {.fieldTag(omit=JstinOmit.WhenEmpty).}: array[3, int]
+      d {.fieldTag(omit=JstinOmit.WhenEmpty).}: ref Foo1
       e: float
 
   let obj = Foo1(a: "abc", b: @[], c: [1,2,3], d: nil, e: 6.28)
@@ -116,3 +116,22 @@ test "omit annotation":
   check(rec.c.len == 3)
   check(rec.d.isNil)
   check(rec.e == 6.28)
+
+test "Object annotations":
+  type
+    Foo1A {.objTag(renameAll = UpperCase).} = object
+      field: int
+    Foo2A {.objTag(renameAll = LowerCase).} = object
+      field: int
+    Foo3A {.objTag(renameAll = CapitalCase).} = object
+      field: int
+    Foo4A {.objTag(renameAll = CamelCase).} = object
+      my_field_name: int
+    Foo5A {.objTag(renameAll = SnakeCase).} = object
+      myFieldName: int
+
+  check("FIELD" in toJson(Foo1A(field: 42)))
+  check("field" in toJson(Foo2A(field: 42)))
+  check("Field" in toJson(Foo3A(field: 42)))
+  check("myFieldName" in toJson(Foo4A(my_field_name: 42)))
+  check("my_field_name" in toJson(Foo5A(myFieldName: 42)))
