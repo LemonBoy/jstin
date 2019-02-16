@@ -24,10 +24,10 @@ test "Roundtrip of simple types":
   test(@[1,2,3])
 
 test "Handling of array & seq":
-  let t1 = fromJson[array[3, int]](toJson([1,2,3,4]))
-  let t2 = fromJson[array[3, int]](toJson(@[1,2,3,4,5]))
+  let t1 = fromJson[array[3, int]](toJson([1,2,3]))
+  let t2 = fromJson[array[3, int]](toJson(@[1,2,3]))
   doAssert(t1 == t2)
-  doAssertRaises(IndexError):
+  doAssertRaises(JstinDeserializeError):
     let t3 = fromJson[array[5, int]](toJson([1,2,3,4]))
   let t4 = fromJson[seq[int]](toJson([1,2,3,4]))
   doAssert(t4.len == 4)

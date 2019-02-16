@@ -33,11 +33,16 @@ type
     CamelCase   ## "camelCase"
     SnakeCase   ## "snake_case"
 
+  JstinDeserializeError* = object of CatchableError
+
 template objTag*(renameAll: JstinRenameRule) {.pragma.} ## \
   ## Use this to tag an object type.
 
 template fieldTag*(rename = ""; omit = JstinOmit.Never) {.pragma.} ## \
   ## Use this to tag an object field.
+
+template raiseDesError(msg: string) =
+  raise newException(JstinDeserializeError, msg)
 
 template verifyJsonKind(node: JsonNode, kinds: set[JsonNodeKind], destTyp: typedesc) =
   if node.kind notin kinds:
@@ -151,8 +156,8 @@ proc toJson*[T: object](val: T): JsonNode =
 proc toJson*[T: tuple](val: T): JsonNode =
   staticEcho "toJson(tuple) ", typetraits.name(type(T))
   result = newJObject()
-  for f, v in val.fieldPairs:
-    result[f] = toJson(v)
+  for name, sym in val.fieldPairs:
+    result[name] = toJson(sym)
 
 proc fromJson*[T: SomeInteger|char](obj: var T; node: JsonNode) =
   staticEcho "fromJson(integer) ", typetraits.name(type(T))
@@ -182,6 +187,9 @@ proc fromJson*[T: bool](obj: var T; node: JsonNode) =
 proc fromJson*[T: array](obj: var T; node: JsonNode) =
   staticEcho "fromJson(array) ", typetraits.name(type(T))
   verifyJsonKind(node, {JArray}, T)
+  if node.len != obj.len:
+    raiseDesError("Array size mismatch, got $1 elements but expected $2" %
+      [$node.len, $obj.len])
   for i, val in mpairs(obj):
     val.fromJson(node[i])
 
@@ -214,7 +222,8 @@ proc fromJson*[T: object](obj: var T; node: JsonNode) =
     const renameAll = NoRename
   for name, sym in obj.fieldPairs:
     const opts = getFieldOpts(name, sym, renameAll)
-    when opts.omit == Never: fromJson(sym, node[opts.key])
+    when opts.omit == Never:
+      fromJson(sym, node[opts.key])
     elif opts.omit == WhenEmpty:
       if opts.key in node: fromJson(sym, node[opts.key])
       else: sym = default(type(sym))
